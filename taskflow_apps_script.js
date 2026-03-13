@@ -114,11 +114,30 @@ function getLog(ss, limit) {
 
 // ─── ACTIONS ───
 
+function parseLocalDT(s) {
+  // Parse "2026-03-13T18:59" or "2026-03-13" into a proper Date in script timezone
+  if (!s) return "";
+  // Remove T separator: "2026-03-13T18:59" → "2026-03-13 18:59"
+  var clean = String(s).replace("T", " ").trim();
+  // Parse parts manually to avoid timezone shifting
+  var parts = clean.split(/[\s-:]+/);
+  if (parts.length >= 3) {
+    var y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+    var hr = parts.length >= 4 ? parseInt(parts[3]) : 0;
+    var mn = parts.length >= 5 ? parseInt(parts[4]) : 0;
+    return new Date(y, m, d, hr, mn, 0);
+  }
+  return s;
+}
+
 function addTask(ss, data, user) {
   var sheet = ss.getSheetByName("Tasks");
   if (!sheet) throw new Error("Tasks sheet not found");
   var taskId = "TASK" + Math.floor(Math.random() * 9000 + 1000);
-  sheet.appendRow([taskId, data.title || "", data.desc || "", data.to || "", data.by || "", data.pri || "Medium", "To Do", data.due || "", data.rem || "", new Date().toISOString(), "No"]);
+  var dueVal = parseLocalDT(data.due);
+  var remVal = parseLocalDT(data.rem);
+  var nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+  sheet.appendRow([taskId, data.title || "", data.desc || "", data.to || "", data.by || "", data.pri || "Medium", "To Do", dueVal, remVal, nowStr, "No"]);
 
   // Log
   logActivity(ss, user, "Created task", data.title, "Assigned to " + data.to + " • Priority: " + data.pri + (data.due ? " • Due: " + data.due : ""));
@@ -165,7 +184,9 @@ function updateTask(ss, data, user) {
   var oldSt = String(oldRow[6] || "").trim();
   var oldPri = String(oldRow[5] || "").trim();
 
-  var vals = [data.title || "", data.desc || "", data.to || "", data.by || "", data.pri || "Medium", data.st || "To Do", data.due || "", data.rem || ""];
+  var dueVal = parseLocalDT(data.due);
+  var remVal = parseLocalDT(data.rem);
+  var vals = [data.title || "", data.desc || "", data.to || "", data.by || "", data.pri || "Medium", data.st || "To Do", dueVal, remVal];
   sheet.getRange(ri, 2, 1, 8).setValues([vals]);
 
   // Build change details for log
@@ -242,8 +263,8 @@ function checkReminders() {
     var row = data[r]; if (!row[cols.rem]) continue;
     if (String(row[cols.sent] || "").trim().toLowerCase() === "yes") continue;
     if (String(row[cols.st] || "").trim().toLowerCase() === "done") continue;
-    var rt = row[cols.rem] instanceof Date ? row[cols.rem] : new Date(String(row[cols.rem]));
-    if (isNaN(rt.getTime())) continue;
+    var rt = row[cols.rem] instanceof Date ? row[cols.rem] : parseLocalDT(String(row[cols.rem]));
+    if (!(rt instanceof Date) || isNaN(rt.getTime())) continue;
     if (rt <= now) {
       var title = row[cols.title] || "Untitled";
       var pe = String(row[cols.pri]) === "High" ? "🔴" : String(row[cols.pri]) === "Low" ? "🟢" : "🟡";
