@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taskflow — Team Task Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #13141F; --surface: #1A1C2E; --surface2: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
+    --text: #E4E5EB; --text2: #C8CAD4; --muted: #8B8FA3; --dim: #6B6F82; --faint: #555770;
+    --blue: #5B8DEF; --purple: #C97BDB; --red: #EF6B6B; --green: #6BCB77; --yellow: #E8B931;
+    --grad: linear-gradient(135deg, var(--blue), var(--purple));
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  button, input, select, textarea { font-family: inherit; }
+
+  .header { background: linear-gradient(180deg, rgba(91,141,239,0.08) 0%, transparent 100%); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .header-inner { max-width: 860px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .logo { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { font-size: 12px; color: var(--dim); margin-top: 4px; }
+  .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .btn { padding: 8px 20px; border-radius: 10px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--grad); color: #fff; }
+  .btn-secondary { padding: 6px 14px; border-radius: 10px; border: 1px solid var(--border2); background: rgba(255,255,255,0.04); color: var(--text2); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-ghost { background: transparent; border: none; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 16px; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 20px 24px; }
+
+  .alert { border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .alert-error { background: rgba(239,107,107,0.1); border: 1px solid rgba(239,107,107,0.2); color: var(--red); }
+  .alert-success { background: rgba(107,203,119,0.06); border: 1px solid rgba(107,203,119,0.15); color: var(--muted); }
+  .alert-success a { color: var(--blue); text-decoration: none; font-weight: 600; }
+
+  .member-filters { display: flex; gap: 6px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+  .member-pill { padding: 4px 12px 4px 6px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--border2); background: transparent; color: var(--dim); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .member-pill .av { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+
+  .status-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface2); border-radius: 12px; padding: 4px; }
+  .status-tab { flex: 1; padding: 8px 0; border-radius: 9px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; background: transparent; color: var(--dim); }
+  .status-tab.active { background: rgba(255,255,255,0.08); color: var(--text); }
+  .cnt { margin-left: 6px; font-size: 10px; opacity: 0.6; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 6px; }
+
+  .card { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 10px; transition: all 0.2s; }
+  .card.done { opacity: 0.55; }
+  .card-inner { display: flex; align-items: flex-start; gap: 12px; }
+  .sbtn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0; line-height: 1; margin-top: 1px; }
+  .card-body { flex: 1; min-width: 0; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.4; }
+  .card-title.struck { text-decoration: line-through; }
+  .card-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge { display: inline-flex; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .avatar { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--dim); }
+  .stats { margin-top: 32px; padding: 16px 20px; border-radius: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-around; flex-wrap: wrap; gap: 12px; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px); }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 18px; width: 100%; max-width: 520px; padding: 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
+  .mtitle { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 24px; font-family: 'Playfair Display', Georgia, serif; }
+  .field { margin-bottom: 16px; }
+  .field label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .field input, .field select, .field textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 13px; outline: none; }
+  .field textarea { resize: vertical; }
+  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pri-btns { display: flex; gap: 8px; }
+  .pri-btn { flex: 1; padding: 8px 0; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .mactions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  .setup { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .setup-box { width: 100%; max-width: 560px; }
+  .slogo { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .ssub { font-size: 14px; color: var(--dim); margin-bottom: 32px; }
+  .scard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  .sstep { font-size: 12px; font-weight: 700; color: var(--purple); margin-bottom: 12px; }
+  .scard p { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+  .scard ol { margin: 0 0 12px; padding-left: 18px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+  .scard ol strong { color: var(--text2); }
+  .scard code { font-size: 11px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: var(--muted); }
+  .scard input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 13px; outline: none; }
+  .shint { font-size: 11px; color: var(--dim); margin-top: 6px; }
+
+  .google-btn { display: inline-flex; align-items: center; gap: 10px; padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border2); background: rgba(255,255,255,0.04); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .google-btn:hover { background: rgba(255,255,255,0.08); }
+  .google-btn img { width: 20px; height: 20px; }
+  .user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .user-info img { width: 24px; height: 24px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div id="app"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#8B8FA3;font-size:14px">Loading...</div></div>
+
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+// ═══════════════════════════════════════
+// TASKFLOW — with Google OAuth
+// ═══════════════════════════════════════
+
+const CONFIG_KEY = "taskflow-config-v4";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
+
+const PRI = {
+  High: { label: "HIGH", color: "#EF6B6B", bg: "rgba(239,107,107,0.12)" },
+  Medium: { label: "MED", color: "#E8B931", bg: "rgba(232,185,49,0.12)" },
+  Low: { label: "LOW", color: "#6BCB77", bg: "rgba(107,203,119,0.12)" },
+};
+const ST = {
+  "To Do": { icon: "○", color: "#6B6F82", next: "In Progress" },
+  "In Progress": { icon: "◐", color: "#5B8DEF", next: "Done" },
+  "Done": { icon: "●", color: "#6BCB77", next: "To Do" },
+};
+const DCOL = ["#E8B931","#5B8DEF","#EF6B6B","#6BCB77","#C97BDB","#FF8C42","#36CFC9","#F759AB"];
+
+let S = { sheetId: "", clientId: "", token: null, userInfo: null, tasks: [], members: [], error: null, filter: "all", mFilter: "all", modal: false, saving: false, lastRefresh: null };
+let selPri = "Medium";
+let tokenClient = null;
+
+function up(p) { Object.assign(S, p); draw(); }
+
+// ─── Auth ───
+function initAuth() {
+  if (!S.clientId || typeof google === "undefined") return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: S.clientId,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.access_token) {
+        S.token = resp.access_token;
+        localStorage.setItem(CONFIG_KEY, JSON.stringify({ sheetId: S.sheetId, clientId: S.clientId }));
+        up({});
+        loadData();
+      }
+    },
+  });
+}
+
+function signIn() {
+  if (!tokenClient) initAuth();
+  if (tokenClient) tokenClient.requestAccessToken();
+}
+
+function signOut() {
+  if (S.token) { try { google.accounts.oauth2.revoke(S.token); } catch {} }
+  S.token = null; S.userInfo = null; S.tasks = []; S.members = [];
+  up({});
+}
+
+// ─── API ───
+function authHeaders() { return { "Authorization": "Bearer " + S.token, "Content-Type": "application/json" }; }
+
+async function api(url, opts) {
+  const res = await fetch(url, { ...opts, headers: { ...authHeaders(), ...(opts?.headers || {}) } });
+  if (res.status === 401) { S.token = null; up({ error: "Session expired. Please sign in again." }); throw new Error("Auth expired"); }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || "HTTP " + res.status); }
+  return res.json();
+}
+
+async function fetchRows(range) {
+  const data = await api(`${SHEETS}/${S.sheetId}/values/${encodeURIComponent(range)}`);
+  return data.values || [];
+}
+
+async function appendRow(range, values) {
+  await api(`${SHEETS}/${S.sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`, {
+    method: "POST", body: JSON.stringify({ values: [values] }),
+  });
+}
+
+async function updateCell(range, value) {
+  await api(`${SHEETS}/${S.sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+    method: "PUT", body: JSON.stringify({ values: [[value]] }),
+  });
+}
+
+function parseTasks(rows) {
+  if (!rows || rows.length < 2) return [];
+  const h = rows[0].map(x => String(x).trim().toLowerCase());
+  return rows.slice(1).map((r, i) => {
+    const g = n => { const j = h.indexOf(n); return j >= 0 && r[j] ? String(r[j]).trim() : ""; };
+    return { ri: i + 2, id: g("task id"), title: g("title"), desc: g("description"), to: g("assigned to"), by: g("assigned by"), pri: g("priority") || "Medium", st: g("status") || "To Do", due: g("due date"), rem: g("reminder time"), sent: g("reminder sent") };
+  }).filter(t => t.title);
+}
+
+function parseMembers(rows) {
+  if (!rows || rows.length < 2) return [];
+  return rows.slice(1).map((r, i) => ({ name: r[0] || "Member", avatar: r[1] || "👤", color: r[2] || DCOL[i % 8] })).filter(m => m.name);
+}
+
+async function loadData() {
+  if (!S.token || !S.sheetId) return;
+  try {
+    const [tr, mr] = await Promise.all([fetchRows("Tasks!A:K"), fetchRows("Team!A:C")]);
+    up({ tasks: parseTasks(tr), members: parseMembers(mr), error: null, lastRefresh: new Date() });
+  } catch (e) { if (S.token) up({ error: e.message }); }
+}
+
+// ─── Helpers ───
+function fmtDate(d) {
+  if (!d) return ""; const dt = new Date(d); if (isNaN(dt)) return d;
+  const now = new Date(), diff = dt - now, days = Math.ceil(diff / 86400000);
+  if (days === 0) return "Today"; if (days === 1) return "Tomorrow"; if (days === -1) return "Yesterday";
+  if (days > 0 && days < 7) return "In " + days + "d"; if (days < 0 && days > -7) return Math.abs(days) + "d ago";
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function fmtRem(d) { if (!d) return ""; try { return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch { return d; } }
+function gm(name) { return S.members.find(m => m.name.toLowerCase() === (name || "").toLowerCase()) || { name: name || "?", avatar: "👤", color: "#8B8FA3" }; }
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ─── Actions ───
+async function cycleStatus(ri, next) {
+  try { await updateCell(`Tasks!G${ri}`, next); S.tasks = S.tasks.map(t => t.ri === ri ? { ...t, st: next } : t); draw(); }
+  catch (e) { alert("Failed: " + e.message); }
+}
+
+async function submitTask() {
+  const title = document.getElementById("nt-title")?.value.trim();
+  if (!title || S.saving) return;
+  up({ saving: true });
+  try {
+    const row = [
+      "TASK" + Math.floor(Math.random() * 9000 + 1000), title,
+      document.getElementById("nt-desc").value.trim(),
+      document.getElementById("nt-to").value,
+      document.getElementById("nt-by").value,
+      selPri, "To Do",
+      document.getElementById("nt-due").value,
+      document.getElementById("nt-rem").value,
+      new Date().toISOString(), "No"
+    ];
+    await appendRow("Tasks!A:K", row);
+    up({ modal: false, saving: false });
+    await loadData();
+  } catch (e) { alert("Failed: " + e.message); up({ saving: false }); }
+}
+
+function pickPri(k) {
+  selPri = k;
+  Object.entries(PRI).forEach(([key, v]) => {
+    const b = document.getElementById("pri-" + key);
+    if (b) { b.style.border = key === k ? `2px solid ${v.color}` : "2px solid rgba(255,255,255,0.08)"; b.style.background = key === k ? v.bg : "transparent"; b.style.color = key === k ? v.color : "var(--dim)"; }
+  });
+}
+
+function saveSetup() {
+  const sheetId = document.getElementById("s-sheet")?.value.trim();
+  const clientId = document.getElementById("s-client")?.value.trim();
+  if (!sheetId || !clientId) return;
+  S.sheetId = sheetId; S.clientId = clientId;
+  localStorage.setItem(CONFIG_KEY, JSON.stringify({ sheetId, clientId }));
+  initAuth();
+  signIn();
+}
+
+function disconnect() {
+  if (!confirm("Disconnect from Google Sheet?")) return;
+  signOut();
+  localStorage.removeItem(CONFIG_KEY);
+  S.sheetId = ""; S.clientId = "";
+  up({});
+}
+
+// ─── Render ───
+function draw() {
+  const app = document.getElementById("app");
+  if (!S.sheetId || !S.clientId) { drawSetup(app); return; }
+  if (!S.token) { drawSignIn(app); return; }
+  drawApp(app);
+}
+
+function drawSetup(app) {
+  app.innerHTML = `
+    <div class="setup"><div class="setup-box">
+      <div class="slogo">Taskflow</div>
+      <div class="ssub">Connect to your Google Sheet to get started</div>
+      <div class="scard">
+        <div class="sstep">STEP 1 — GOOGLE SHEET ID</div>
+        <p>Open your Taskflow Google Sheet. Copy the ID from the URL:<br>
+        <code>https://docs.google.com/spreadsheets/d/<strong style="color:var(--blue)">THIS_PART</strong>/edit</code></p>
+        <input id="s-sheet" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+      </div>
+      <div class="scard">
+        <div class="sstep">STEP 2 — GOOGLE OAUTH CLIENT ID</div>
+        <ol>
+          <li>Go to <strong>console.cloud.google.com</strong></li>
+          <li>Select your project → Enable <strong>Google Sheets API</strong></li>
+          <li>Go to <strong>APIs & Services</strong> → <strong>Credentials</strong></li>
+          <li>Click <strong>+ CREATE CREDENTIALS</strong> → <strong>OAuth client ID</strong></li>
+          <li>Application type: <strong>Web application</strong></li>
+          <li>Under <strong>Authorized JavaScript origins</strong>, add your GitHub Pages URL:<br><code>https://YOUR_USERNAME.github.io</code></li>
+          <li>Click <strong>Create</strong> → copy the <strong>Client ID</strong></li>
+        </ol>
+        <input id="s-client" placeholder="123456789-abcdefg.apps.googleusercontent.com">
+        <div class="shint">You may also need to add yourself as a test user under OAuth consent screen if the app is in "Testing" mode.</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px" onclick="saveSetup()">Continue to Sign In</button>
+    </div></div>`;
+}
+
+function drawSignIn(app) {
+  app.innerHTML = `
+    <div class="setup"><div class="setup-box" style="text-align:center">
+      <div class="slogo">Taskflow</div>
+      <div class="ssub">Sign in with Google to access your team's tasks</div>
+      <button class="google-btn" onclick="signIn()" style="margin:24px auto">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Sign in with Google
+      </button>
+      <p style="font-size:12px;color:var(--dim);margin-top:16px">This grants Taskflow permission to read and write your Google Sheet.</p>
+      <button class="btn-secondary" onclick="disconnect()" style="margin-top:24px">← Change Settings</button>
+    </div></div>`;
+}
+
+function drawApp(app) {
+  const { tasks, members, filter, mFilter, error, lastRefresh } = S;
+  const ft = tasks.filter(t => {
+    if (filter === "todo" && t.st !== "To Do") return false;
+    if (filter === "ip" && t.st !== "In Progress") return false;
+    if (filter === "done" && t.st !== "Done") return false;
+    if (mFilter !== "all" && t.to.toLowerCase() !== mFilter.toLowerCase()) return false;
+    return true;
+  });
+  const c = { all: tasks.length, todo: tasks.filter(t => t.st === "To Do").length, ip: tasks.filter(t => t.st === "In Progress").length, done: tasks.filter(t => t.st === "Done").length };
+
+  let h = `<div class="header"><div class="header-inner">
+    <div><div class="logo">Taskflow</div><div class="subtitle">Team tasks • Google Sheets + Zoho Cliq${lastRefresh ? " • Updated " + lastRefresh.toLocaleTimeString() : ""}</div></div>
+    <div class="header-actions">
+      <button class="btn-secondary" onclick="loadData()">🔄 Refresh</button>
+      <button class="btn btn-primary" onclick="up({modal:true})">＋ New Task</button>
+      <button class="btn-ghost" onclick="disconnect()" title="Settings">⚙️</button>
+    </div>
+  </div></div><div class="container">`;
+
+  if (error) h += `<div class="alert alert-error">⚠️ ${esc(error)}</div>`;
+  h += `<div class="alert alert-success">📊 Connected • ${members.length} team members • Auto-refreshes every 30s <a href="https://docs.google.com/spreadsheets/d/${S.sheetId}/edit" target="_blank">Open Sheet ↗</a></div>`;
+
+  // Members
+  h += `<div class="member-filters"><button class="member-pill" style="${mFilter==="all"?"background:rgba(91,141,239,0.18);color:var(--blue);border-color:transparent":""}" onclick="up({mFilter:'all'})">All</button>`;
+  members.forEach(m => {
+    const a = mFilter === m.name;
+    h += `<button class="member-pill" style="${a?`background:${m.color}22;color:${m.color};border-color:transparent`:""}" onclick="up({mFilter:'${esc(m.name)}'})"><span class="av" style="background:${m.color}22;border:2px solid ${m.color}">${m.avatar}</span> ${esc(m.name)}</button>`;
+  });
+  h += `</div>`;
+
+  // Tabs
+  h += `<div class="status-tabs">`;
+  [["all","All"],["todo","To Do"],["ip","In Progress"],["done","Done"]].forEach(([k,l]) => {
+    h += `<button class="status-tab ${filter===k?"active":""}" onclick="up({filter:'${k}'})">${l}<span class="cnt">${c[k]}</span></button>`;
+  });
+  h += `</div>`;
+
+  // Cards
+  if (ft.length === 0) {
+    h += `<div class="empty"><div style="font-size:48px;margin-bottom:16px;opacity:0.5">${filter==="done"?"🎉":"📋"}</div><div style="font-size:15px;font-weight:600;margin-bottom:4px">${filter==="done"?"No completed tasks":"No tasks here"}</div><div style="font-size:13px;opacity:0.7">Create a new task to get started</div></div>`;
+  } else {
+    ft.forEach(t => {
+      const p = PRI[t.pri] || PRI.Medium, s = ST[t.st] || ST["To Do"], m = gm(t.to);
+      const od = t.due && new Date(t.due) < new Date() && t.st !== "Done";
+      h += `<div class="card ${t.st==="Done"?"done":""}" style="border-left:3px solid ${p.color}"><div class="card-inner">
+        <button class="sbtn" style="color:${s.color}" onclick="cycleStatus(${t.ri},'${s.next}')" title="${t.st}">${s.icon}</button>
+        <div class="card-body">
+          <div class="card-title ${t.st==="Done"?"struck":""}">${esc(t.title)}</div>
+          ${t.desc?`<div class="card-desc">${esc(t.desc)}</div>`:""}
+          <div class="card-meta">
+            <span class="badge" style="color:${p.color};background:${p.bg}">${p.label}</span>
+            ${t.due?`<span style="font-size:11px;color:${od?"var(--red)":"var(--muted)"};font-weight:${od?700:500}">📅 ${fmtDate(t.due)}</span>`:""}
+            ${t.rem?`<span style="font-size:11px;color:var(--purple)">⏰ ${fmtRem(t.rem)}</span>`:""}
+            ${t.sent==="Yes"?`<span style="font-size:10px;color:var(--green)">✓ Cliq sent</span>`:""}
+          </div>
+        </div>
+        <div class="card-right">
+          <div style="display:flex;align-items:center;gap:4px"><span class="avatar" style="width:24px;height:24px;background:${m.color}22;border:2px solid ${m.color};font-size:12px">${m.avatar}</span><span style="font-size:11px;color:var(--muted)">${esc(t.to)}</span></div>
+          <div style="font-size:10px;color:var(--faint)">from ${esc(t.by)}</div>
+        </div>
+      </div></div>`;
+    });
+  }
+
+  // Stats
+  if (tasks.length > 0) {
+    h += `<div class="stats">`;
+    [["Total",c.all,"var(--muted)"],["To Do",c.todo,"var(--dim)"],["In Progress",c.ip,"var(--blue)"],["Done",c.done,"var(--green)"]].forEach(([l,v,col]) => {
+      h += `<div><div style="font-size:22px;font-weight:800;color:${col};text-align:center">${v}</div><div style="font-size:10px;color:var(--faint);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;text-align:center">${l}</div></div>`;
+    });
+    h += `</div>`;
+  }
+
+  h += `</div>`;
+
+  // Modal
+  if (S.modal) {
+    const opts = members.map((m, i) => `<option value="${esc(m.name)}" ${i===(members.length>1?1:0)?"selected":""}>${m.avatar} ${esc(m.name)}</option>`).join("");
+    const opts0 = members.map((m, i) => `<option value="${esc(m.name)}" ${i===0?"selected":""}>${m.avatar} ${esc(m.name)}</option>`).join("");
+    h += `<div class="overlay" onclick="up({modal:false,saving:false})"><div class="modal" onclick="event.stopPropagation()">
+      <div class="mtitle">New Task</div>
+      <div class="field"><label>Title *</label><input id="nt-title" placeholder="What needs to be done?" autofocus></div>
+      <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add details..." rows="2"></textarea></div>
+      <div class="frow"><div class="field"><label>Assign To</label><select id="nt-to">${opts}</select></div><div class="field"><label>Assigned By</label><select id="nt-by">${opts0}</select></div></div>
+      <div class="field"><label>Priority</label><div class="pri-btns">${Object.entries(PRI).map(([k,v])=>`<button class="pri-btn" id="pri-${k}" style="border:2px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim)" onclick="pickPri('${k}')">${v.label}</button>`).join("")}</div></div>
+      <div class="frow"><div class="field"><label>Due Date</label><input type="date" id="nt-due"></div><div class="field"><label>Reminder</label><input type="datetime-local" id="nt-rem"></div></div>
+      <div class="mactions">
+        <button class="btn-secondary" onclick="up({modal:false,saving:false})">Cancel</button>
+        <button class="btn btn-primary" onclick="submitTask()" ${S.saving?"disabled":""}>${S.saving?"Saving...":"Create Task"}</button>
+      </div>
+    </div></div>`;
+  }
+
+  app.innerHTML = h;
+  if (S.modal) pickPri(selPri);
+}
+
+// ─── Init ───
+(function() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY));
+    if (cfg) { S.sheetId = cfg.sheetId || ""; S.clientId = cfg.clientId || ""; }
+  } catch {}
+  draw();
+
+  // Wait for Google Identity Services to load, then init
+  const waitForGIS = setInterval(() => {
+    if (typeof google !== "undefined" && google.accounts) {
+      clearInterval(waitForGIS);
+      if (S.clientId) initAuth();
+    }
+  }, 200);
+
+  // Auto-refresh
+  setInterval(() => { if (S.token) loadData(); }, 30000);
+})();
+</script>
+</body>
+</html>
